@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Smart Study Planner </title>
+
+<style>
+body{
+    margin:0;
+    font-family:Arial;
+    background:linear-gradient(to right,#667eea,#764ba2);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+}
+.container{
+    background:white;
+    width:440px;
+    padding:20px;
+    border-radius:15px;
+    box-shadow:0 0 15px rgba(0,0,0,0.3);
+    text-align:center;
+    overflow-y:auto;
+    max-height:95vh;
+}
+select,input,button{
+    width:85%;
+    padding:6px;
+    margin:5px;
+    border-radius:6px;
+    border:1px solid #ccc;
+    font-size:14px;
+}
+button{
+    background:#667eea;
+    color:white;
+    border:none;
+    cursor:pointer;
+}
+button:hover{
+    background:#4c5fd7;
+}
+.timer{
+    font-size:22px;
+    font-weight:bold;
+    margin-top:10px;
+}
+.small-btn{
+    width:40%;
+}
+.info{
+    font-size:13px;
+    margin-top:5px;
+}
+.logout-bottom{
+    background:red;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>📚 Smart Study Planner PRO+</h2>
+
+<label>Exam Date:</label>
+<input type="date" id="examDate">
+<div class="info" id="daysLeft"></div>
+
+<hr>
+
+<select id="subject">
+<option value="">Select Subject</option>
+<option>English</option>
+<option>Hindi</option>
+<option>Mathematics</option>
+<option>Science</option>
+<option>Social Studies</option>
+<option>Physics</option>
+<option>Chemistry</option>
+<option>Biology</option>
+<option>Computer Science</option>
+</select>
+
+<select id="hours">
+<option value="0">Hours</option>
+<option value="1">1 Hour</option>
+<option value="2">2 Hours</option>
+<option value="3">3 Hours</option>
+</select>
+
+<select id="minutes">
+<option value="0">Minutes</option>
+<option value="15">15 Min</option>
+<option value="30">30 Min</option>
+<option value="45">45 Min</option>
+</select>
+
+<button onclick="generatePlan()">Generate Plan</button>
+
+<div id="planResult" class="info"></div>
+
+<hr>
+
+<h3>🎯 Focus Timer</h3>
+<div class="timer" id="timerDisplay">00:00:00</div>
+<div class="info">Today's Focus Time: <span id="todayFocus">0</span> mins</div>
+
+<button class="small-btn" onclick="startFocus()">Start</button>
+<button class="small-btn" onclick="stopFocus()">Stop</button>
+
+<hr>
+
+<h3>☕ Break Timer</h3>
+<div class="timer" id="breakDisplay">00:05:00</div>
+<button class="small-btn" onclick="startBreak()">Start</button>
+<button class="small-btn" onclick="stopBreak()">Stop</button>
+<button onclick="restartBreak()">Restart</button>
+
+<hr>
+
+<p>
+Notifications:
+<button onclick="toggleNotify()" id="notifyBtn">ON</button>
+</p>
+
+<hr>
+
+<button class="logout-bottom" onclick="logout()">Logout</button>
+
+</div>
+
+<script>
+
+let focusInterval;
+let breakInterval;
+let notificationOn = true;
+let totalSeconds = 0;
+let todayMinutes = 0;
+
+// Days Left
+document.getElementById("examDate").addEventListener("change", function(){
+    let examDate = new Date(this.value);
+    let today = new Date();
+    let diff = examDate - today;
+    let days = Math.ceil(diff / (1000*60*60*24));
+    document.getElementById("daysLeft").innerHTML =
+    "📅 Days Left: " + days + " days";
+});
+
+// Generate Plan
+function generatePlan(){
+    let subject = document.getElementById("subject").value;
+    let h = parseInt(document.getElementById("hours").value);
+    let m = parseInt(document.getElementById("minutes").value);
+
+    if(subject==="" || (h===0 && m===0)){
+        alert("Select subject and time");
+        return;
+    }
+
+    let totalMin = h*60 + m;
+    document.getElementById("planResult").innerHTML =
+    "📖 Study " + subject + " for " + totalMin + " minutes.";
+}
+
+// Focus Timer
+function startFocus(){
+    let h = parseInt(document.getElementById("hours").value);
+    let m = parseInt(document.getElementById("minutes").value);
+    totalSeconds = (h*3600)+(m*60);
+
+    if(totalSeconds===0){
+        alert("Select time first");
+        return;
+    }
+
+    clearInterval(focusInterval);
+
+    focusInterval = setInterval(function(){
+        totalSeconds--;
+        let hrs = Math.floor(totalSeconds/3600);
+        let mins = Math.floor((totalSeconds%3600)/60);
+        let secs = totalSeconds%60;
+
+        document.getElementById("timerDisplay").innerHTML =
+        String(hrs).padStart(2,'0') + ":" +
+        String(mins).padStart(2,'0') + ":" +
+        String(secs).padStart(2,'0');
+
+        if(totalSeconds<=0){
+            clearInterval(focusInterval);
+            todayMinutes += (h*60+m);
+            document.getElementById("todayFocus").innerText = todayMinutes;
+            if(notificationOn) alert("Focus Complete 🎉");
+        }
+    },1000);
+}
+
+function stopFocus(){
+    clearInterval(focusInterval);
+}
+
+// Break Timer
+function startBreak(){ runBreak(300); }
+function stopBreak(){ clearInterval(breakInterval); }
+function restartBreak(){ runBreak(300); }
+
+function runBreak(seconds){
+    clearInterval(breakInterval);
+    breakInterval = setInterval(function(){
+        seconds--;
+        let mins = Math.floor(seconds/60);
+        let secs = seconds%60;
+
+        document.getElementById("breakDisplay").innerHTML =
+        "00:" + String(mins).padStart(2,'0') + ":" +
+        String(secs).padStart(2,'0');
+
+        if(seconds<=0){
+            clearInterval(breakInterval);
+            if(notificationOn) alert("Break Over 💪");
+        }
+    },1000);
+}
+
+// Notification Toggle
+function toggleNotify(){
+    notificationOn = !notificationOn;
+    document.getElementById("notifyBtn").innerText =
+    notificationOn ? "ON" : "OFF";
+}
+
+// Logout
+function logout(){
+    alert("Logged Out Successfully");
+    window.location.href="login.html";
+}
+
+</script>
+
+</body>
+</html>
